@@ -15,6 +15,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Unzip dcukey.zip
+        run: |
+          if [ -f "dcukey.zip" ]; then
+            echo "Tim thay dcukey.zip, dang giai nen..."
+            unzip -o dcukey.zip
+          fi
+          ls -la
+
       - name: Select Xcode Version
         run: |
           sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer || sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
@@ -27,22 +35,20 @@ jobs:
             -scheme "TEST PHUQUY" \
             -configuration Release \
             -sdk iphoneos \
+            -destination "generic/platform=iOS" \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             AD_HOC_CODE_SIGNING_ALLOWED=YES
 
-      - name: Package into IPA (Payload format)
+      - name: Package Official IPA (Payload format)
         run: |
           mkdir -p Payload
-          APP_PATH=$(find build/Build/Products/Release-iphoneos -name "*.app" -type d | head -n 1)
-          echo "Found app at: $APP_PATH"
-          cp -r "$APP_PATH" Payload/
-          
-          # Đóng gói thành file dcukey.ipa
+          APP_DIR=$(find build/Build/Products/Release-iphoneos -name "*.app" -type d | head -n 1)
+          echo "Found compiled app at: $APP_DIR"
+          cp -R "$APP_DIR" Payload/
           zip -r -y dcukey.ipa Payload
-          echo "IPA packaged successfully:"
           ls -lh dcukey.ipa
 
       - name: Upload dcukey.ipa as Artifact
@@ -52,18 +58,17 @@ jobs:
           path: dcukey.ipa
           retention-days: 30
 
-      - name: Create GitHub Release (if on main/master)
+      - name: Create GitHub Release
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.0-${{ github.run_number }}
           name: "Release TEST PHUQUY v1.0.0 (Build ${{ github.run_number }})"
           body: |
-            ### 🚀 TEST PHUQUY - GIAO DIỆN XÁC THỰC KEY IOS 26
+            ### 🚀 TEST PHUQUY - GIAO DIỆN XÁC THỰC KEY IOS 26 (BẢN CHUẨN APPLE XCODE)
             - **Máy Chủ Key**: `https://severphuquy.sbs`
             - **API Key**: `https://severphuquy.sbs/api/server_key.php`
-            - **HWID Lock**: Tự động khóa cứng thiết bị khi kích hoạt
-            - **Realtime Heartbeat**: Đồng bộ và tự động kick khi hết hạn / bị band / xóa key
+            - **Biên dịch**: 100% Apple Clang Mach-O ARM64 chính thức qua Xcode.
           files: dcukey.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
