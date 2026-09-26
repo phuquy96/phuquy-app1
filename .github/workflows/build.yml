@@ -1,0 +1,69 @@
+name: Build iOS IPA - TEST PHUQUY
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode Version
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer || sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          xcodebuild -version
+
+      - name: Build App with Xcodebuild
+        run: |
+          xcodebuild clean build \
+            -project TEST_PHUQUY.xcodeproj \
+            -scheme "TEST PHUQUY" \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
+
+      - name: Package into IPA (Payload format)
+        run: |
+          mkdir -p Payload
+          APP_PATH=$(find build/Build/Products/Release-iphoneos -name "*.app" -type d | head -n 1)
+          echo "Found app at: $APP_PATH"
+          cp -r "$APP_PATH" Payload/
+          
+          # Đóng gói thành file dcukey.ipa
+          zip -r -y dcukey.ipa Payload
+          echo "IPA packaged successfully:"
+          ls -lh dcukey.ipa
+
+      - name: Upload dcukey.ipa as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dcukey-ipa
+          path: dcukey.ipa
+          retention-days: 30
+
+      - name: Create GitHub Release (if on main/master)
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0-${{ github.run_number }}
+          name: "Release TEST PHUQUY v1.0.0 (Build ${{ github.run_number }})"
+          body: |
+            ### 🚀 TEST PHUQUY - GIAO DIỆN XÁC THỰC KEY IOS 26
+            - **Máy Chủ Key**: `https://severphuquy.sbs`
+            - **API Key**: `https://severphuquy.sbs/api/server_key.php`
+            - **HWID Lock**: Tự động khóa cứng thiết bị khi kích hoạt
+            - **Realtime Heartbeat**: Đồng bộ và tự động kick khi hết hạn / bị band / xóa key
+          files: dcukey.ipa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
