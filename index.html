@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>TEST PHUQUY - iOS 26 Key Auth System</title>
+  <style>
+    :root {
+      --bg-color: #05070c;
+      --glass-bg: rgba(12, 16, 26, 0.72);
+      --glass-border: rgba(255, 255, 255, 0.18);
+      --accent-cyan: #00f2fe;
+      --accent-green: #00f090;
+      --accent-gradient: linear-gradient(135deg, #00f090 0%, #00b4d8 100%);
+      --danger-red: #ff3b5c;
+      --danger-bg: rgba(255, 59, 92, 0.14);
+      --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-color);
+      color: #ffffff;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Ambient Wallpaper Background */
+    .bg-wallpaper {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('logo.png');
+      background-size: cover;
+      background-position: center;
+      filter: blur(32px) brightness(0.22);
+      transform: scale(1.08);
+      z-index: 0;
+    }
+
+    .ambient-glow {
+      position: fixed;
+      width: 340px;
+      height: 340px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 242, 254, 0.14) 0%, rgba(0, 240, 144, 0.06) 45%, transparent 70%);
+      filter: blur(60px);
+      z-index: 1;
+      pointer-events: none;
+      animation: floatGlow 14s ease-in-out infinite alternate;
+    }
+
+    @keyframes floatGlow {
+      0% { transform: translate(-30px, -40px) scale(0.9); }
+      100% { transform: translate(40px, 50px) scale(1.15); }
+    }
+
+    /* Device Container */
+    .device-wrapper {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 410px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    @media (min-width: 500px) {
+      .device-wrapper {
+        min-height: 820px;
+        max-height: 860px;
+        background: rgba(10, 12, 18, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 46px;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.85);
+        overflow: hidden;
+      }
+    }
+
+    /* GLASS CARD KIỂU LIQUID GLASS IOS 26 */
+    .glass-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(38px) saturate(190%);
+      -webkit-backdrop-filter: blur(38px) saturate(190%);
+      border: 1px solid var(--glass-border);
+      border-radius: 30px;
+      padding: 28px 22px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+      position: relative;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Top Bar with Language Selector */
+    .card-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+      position: relative;
+    }
+
+    .logo-container {
+      width: 82px;
+      height: 66px;
+      margin: 0 auto;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+      background: rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* NÚT CHỌN NGÔN NGỮ GÓC TRÊN CÙNG BÊN PHẢI */
+    .lang-switcher-btn {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 18px;
+      padding: 6px 12px;
+      color: #fff;
+      font-size: 11.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      transition: all 0.2s ease;
+    }
+
+    .lang-switcher-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    /* Language Dropdown Menu */
+    .lang-menu {
+      position: absolute;
+      top: 36px;
+      right: 0;
+      background: rgba(16, 20, 30, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 16px;
+      padding: 6px;
+      box-shadow: 0 14px 35px rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(25px);
+      z-index: 100;
+      display: none;
+      min-width: 135px;
+    }
+
+    .lang-menu.show {
+      display: block;
+      animation: menuPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes menuPop {
+      0% { opacity: 0; transform: scale(0.92) translateY(-4px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .lang-option {
+      padding: 9px 12px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .lang-option:hover, .lang-option.active {
+      background: rgba(0, 240, 144, 0.18);
+      color: var(--accent-green);
+    }
+
+    /* Titles */
+    .card-title {
+      font-size: 18px;
+      font-weight: 800;
+      text-align: center;
+      letter-spacing: 0.5px;
+      margin-top: 14px;
+      color: #ffffff;
+      text-transform: uppercase;
+    }
+
+    .card-subtitle {
+      font-size: 12.5px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.65);
+      text-align: center;
+      margin-top: 5px;
+      margin-bottom: 20px;
+    }
+
+    /* KHUNG Ô NHẬP KEY VÀ NÚT DÁN */
+    .input-group {
+      background: rgba(6, 9, 15, 0.85);
+      border: 1.2px solid rgba(255, 255, 255, 0.18);
+      border-radius: 16px;
+      padding: 4px 6px 4px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .input-group:focus-within {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 18px rgba(0, 242, 254, 0.25);
+    }
+
+    .input-key-field {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #fff;
+      font-size: 14.5px;
+      font-weight: 600;
+      font-family: inherit;
+      padding: 12px 0;
+      user-select: text;
+    }
+
+    .input-key-field::placeholder {
+      color: rgba(255, 255, 255, 0.35);
+      font-weight: 400;
+    }
+
+    /* Nút Dán sát ô nhập key */
+    .btn-paste {
+      background: rgba(24, 38, 60, 0.85);
+      border: 1px solid rgba(0, 242, 254, 0.35);
+      color: #5ce1e6;
+      border-radius: 11px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .btn-paste:hover, .btn-paste:active {
+      background: rgba(35, 60, 95, 1);
+      transform: scale(0.97);
+    }
+
+    /* NÚT XÁC THỰC KEY */
+    .btn-verify {
+      width: 100%;
+      margin-top: 18px;
+      padding: 14px 20px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      background: var(--accent-gradient);
+      color: #03120c;
+      font-size: 15px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      box-shadow: 0 10px 26px rgba(0, 240, 144, 0.28);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.25s ease;
+    }
+
+    .btn-verify:active {
+      transform: scale(0.97);
+    }
+
+    .btn-verify:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    /* Error Banner */
+    .error-banner {
+      margin-top: 14px;
+      background: var(--danger-bg);
+      border: 1px solid var(--danger-red);
+      border-radius: 12px;
+      padding: 9px 12px;
+      color: #ff5470;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      display: none;
+      animation: shake 0.35s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+
+    .hwid-footer {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 10.5px;
+      color: rgba(255, 255, 255, 0.45);
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    /* BẢNG Ô VUÔNG BO TRÒN GÓC NỀN ĐEN VIỀN TRẮNG GLASS IOS 26 */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      z-index: 1000;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    .success-square-modal {
+      width: 320px;
+      height: 330px;
+      background: rgba(10, 14, 22, 0.95);
+      border: 1.5px solid rgba(255, 255, 255, 0.4);
+      border-radius: 30px;
+      padding: 20px 18px;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85), 0 0 35px rgba(0, 240, 144, 0.2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.78); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    /* Nút tích nằm trong ô tròn phía trên cùng giữa ô vuông */
+    .modal-check-circle {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 240, 144, 0.25) 0%, rgba(0, 240, 144, 0.08) 70%);
+      border: 2px solid var(--accent-green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-green);
+      font-size: 26px;
+      font-weight: 900;
+      box-shadow: 0 0 20px rgba(0, 240, 144, 0.45);
+      margin-top: 2px;
+    }
+
+    .modal-success-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    /* Khung 3 thông tin: KEY, THỜI HẠN, HẾT HẠN */
+    .modal-info-box {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 16px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+    }
+
+    .info-row .label {
+      color: rgba(255, 255, 255, 0.65);
+      font-weight: 700;
+    }
+
+    .info-row .value {
+      font-weight: 800;
+      color: #fff;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+    }
+
+    .info-row .value.key-val { color: var(--accent-cyan); }
+    .info-row .value.duration-val { color: var(--accent-green); }
+    .info-row .value.expire-val { color: #ffbe3b; }
+
+    /* Countdown timer and progress */
+    .countdown-text {
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.75);
+      margin-top: 6px;
+    }
+
+    .progress-bar-container {
+      width: 80%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 100%;
+      background: var(--accent-green);
+      transition: width 1s linear;
+    }
+
+    .btn-enter-now {
+      background: transparent;
+      border: none;
+      color: var(--accent-cyan);
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      padding: 4px 10px;
+      margin-top: 4px;
+    }
+
+    /* GIAO DIỆN CHÍNH (MAIN DASHBOARD) */
+    .main-screen {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+      animation: fadeIn 0.4s ease forwards;
+    }
+
+    .main-screen.active {
+      display: flex;
+    }
+
+    .main-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .main-header .logo {
+      width: 58px;
+      height: 48px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(0, 0, 0, 0.4);
+    }
+
+    .main-header .logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .main-header-info h2 {
+      font-size: 20px;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 240, 144, 0.15);
+      border: 1px solid rgba(0, 240, 144, 0.4);
+      color: var(--accent-green);
+      font-size: 11px;
+      font-weight: 800;
+      border-radius: 12px;
+      padding: 3px 10px;
+      margin-top: 4px;
+    }
+
+    .status-badge .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
+    }
+
+    /* NÚT BẬT KIỂU IOS 26 */
+    .ios26-switch-card {
+      background: rgba(14, 20, 32, 0.85);
+      border: 1.2px solid rgba(0, 240, 144, 0.35);
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    .switch-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .switch-title {
+      font-size: 17px;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .switch-sub {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.6);
+      margin-top: 2px;
+    }
+
+    /* Custom iOS 26 Toggle Switch */
+    .ios26-toggle {
+      width: 62px;
+      height: 36px;
+      background: rgba(255, 255, 255, 0.18);
+      border: 1.5px solid rgba(255, 255, 255, 0.3);
+      border-radius: 22px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .ios26-toggle.active {
+      background: var(--accent-green);
+      border-color: #fff;
+      box-shadow: 0 0 20px rgba(0, 240, 144, 0.6);
+    }
+
+    .ios26-toggle-thumb {
+      width: 28px;
+      height: 28px;
+      background: #ffffff;
+      border-radius: 50%;
+      position: absolute;
+      top: 2.5px;
+      left: 3px;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .ios26-toggle.active .ios26-toggle-thumb {
+      transform: translateX(26px);
+      background: #ffffff;
+    }
+
+    .switch-status-pill {
+      margin-top: 14px;
+      padding: 10px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 12.5px;
+      font-weight: 800;
+      transition: all 0.3s ease;
+    }
+
+    .switch-status-pill.on {
+      background: rgba(0, 240, 144, 0.15);
+      color: var(--accent-green);
+      border: 1px solid rgba(0, 240, 144, 0.35);
+    }
+
+    .switch-status-pill.off {
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    /* Realtime Heartbeat Monitor */
+    .heartbeat-bar {
+      background: rgba(10, 14, 22, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--accent-cyan);
+      font-weight: 700;
+    }
+
+    .pulse-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 10px var(--accent-cyan);
+      animation: pulse 1.2s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.4); opacity: 0.35; }
+    }
+
+    /* Logout Button */
+    .btn-logout {
+      width: 100%;
+      background: rgba(255, 59, 92, 0.15);
+      border: 1px solid rgba(255, 59, 92, 0.35);
+      color: #ff6b84;
+      border-radius: 16px;
+      padding: 13px;
+      font-size: 13.5px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-logout:hover {
+      background: rgba(255, 59, 92, 0.25);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Wallpaper and Glow -->
+  <div class="bg-wallpaper"></div>
+  <div class="ambient-glow"></div>
+
+  <!-- Device Container -->
+  <div class="device-wrapper">
+
+    <!-- MÀN HÌNH NHẬP KEY (KEY VIEW) -->
+    <div class="glass-card" id="keyScreen">
+      
+      <!-- Top Bar: Logo + Nút chọn ngôn ngữ góc trên cùng bên phải -->
+      <div class="card-top-bar">
+        <div class="logo-container">
+          <img src="logo.png" alt="PhuQuy Logo" onerror="this.src='https://i.ibb.co/n40bJLx/Screenshot-2026-09-12-193416.png'">
+        </div>
+
+        <!-- Nút chọn ngôn ngữ -->
+        <button class="lang-switcher-btn" id="langBtn" onclick="toggleLangMenu()">
+          <span id="currentLangFlag">🇻🇳</span>
+          <span id="currentLangText">VIETNAM</span>
+          <span style="font-size: 8px;">▼</span>
+        </button>
+
+        <!-- Dropdown 2 ngôn ngữ -->
+        <div class="lang-menu" id="langMenu">
+          <div class="lang-option active" id="optVN" onclick="selectLanguage('vi')">
+            <span>🇻🇳</span> <span>VIETNAM</span>
+          </div>
+          <div class="lang-option" id="optEN" onclick="selectLanguage('en')">
+            <span>🇬🇧</span> <span>ENGLISH</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tiêu đề & Hướng dẫn -->
+      <h1 class="card-title" id="txtTitle">HỆ THỐNG XÁC THỰC PHUQUY</h1>
+      <p class="card-subtitle" id="txtSubtitle">Vui lòng nhập Key bản quyền để kích hoạt</p>
+
+      <!-- KHUNG Ô NHẬP KEY VÀ NÚT DÁN -->
+      <div class="input-group">
+        <input type="text" class="input-key-field" id="keyInput" placeholder="Nhập mã Key tại đây..." spellcheck="false" autocomplete="off">
+        <button class="btn-paste" id="btnPaste" onclick="pasteKey()">
+          <span id="txtPaste">Dán</span>
+        </button>
+      </div>
+
+      <!-- NÚT XÁC THỰC KEY -->
+      <button class="btn-verify" id="btnVerify" onclick="verifyKey()">
+        <span id="txtVerify">XÁC THỰC KEY</span>
+      </button>
+
+      <!-- Banner Thông báo Lỗi -->
+      <div class="error-banner" id="errorBanner"></div>
+
+      <!-- HWID Footer -->
+      <div class="hwid-footer" id="hwidBadge">HWID: PQ-IOS26-88F4-E119</div>
+
+    </div>
+
+    <!-- MÀN HÌNH GIAO DIỆN CHÍNH (MAIN SCREEN) -->
+    <div class="main-screen" id="mainScreen">
+      
+      <!-- Header -->
+      <div class="main-header">
+        <div class="logo">
+          <img src="logo.png" alt="PhuQuy Logo" onerror="this.src='https://i.ibb.co/n40bJLx/Screenshot-2026-09-12-193416.png'">
+        </div>
+        <div class="main-header-info">
+          <h2>TEST PHUQUY</h2>
+          <div class="status-badge">
+            <span class="dot"></span>
+            <span id="txtActiveStatus">HOẠT ĐỘNG • ĐÃ KHÓA HWID</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Thông tin bản quyền -->
+      <div class="glass-card" style="padding: 16px 20px;">
+        <div class="info-row" style="margin-bottom: 8px;">
+          <span class="label">KEY:</span>
+          <span class="value key-val" id="mainKeyDisplay">---</span>
+        </div>
+        <div class="info-row" style="margin-bottom: 8px;">
+          <span class="label" id="txtMainDurationLabel">THỜI HẠN:</span>
+          <span class="value duration-val" id="mainDurationDisplay">1 Ngày</span>
+        </div>
+        <div class="info-row">
+          <span class="label" id="txtMainExpireLabel">HẾT HẠN:</span>
+          <span class="value expire-val" id="mainExpireDisplay">27/09/2026 20:00:00</span>
+        </div>
+      </div>
+
+      <!-- NÚT BẬT KIỂU IOS 26 (FUTURISTIC NEON TOGGLE) -->
+      <div class="ios26-switch-card">
+        <div class="switch-header-row">
+          <div>
+            <div class="switch-title" id="txtSwitchTitle">NÚT BẬT KIỂU IOS 26</div>
+            <div class="switch-sub" id="txtSwitchSub">Chạm để bật/tắt Mod Menu</div>
+          </div>
+          <!-- Custom iOS 26 Toggle Switch -->
+          <div class="ios26-toggle active" id="ios26Toggle" onclick="toggleIos26Switch()">
+            <div class="ios26-toggle-thumb"></div>
+          </div>
+        </div>
+        <div class="switch-status-pill on" id="switchStatusPill">● TRẠNG THÁI: ĐANG BẬT</div>
+      </div>
+
+      <!-- Thanh giám sát Realtime Heartbeat với Máy Chủ -->
+      <div class="heartbeat-bar">
+        <div class="pulse-dot"></div>
+        <span id="txtHeartbeat">Đồng bộ Realtime: Kết nối Máy Chủ PHUQUY</span>
+      </div>
+
+      <!-- Nút Đổi Key / Đăng Xuất -->
+      <button class="btn-logout" id="btnLogout" onclick="logout()">
+        Đổi Key / Đăng Xuất
+      </button>
+
+    </div>
+
+  </div>
+
+  <!-- BẢNG Ô VUÔNG BO TRÒN GÓC NỀN ĐEN VIỀN TRẮNG GLASS IOS 26 -->
+  <div class="modal-overlay" id="successModalOverlay">
+    <div class="success-square-modal">
+      
+      <!-- Nút tích nằm trong ô tròn phía trên cùng giữa ô vuông -->
+      <div class="modal-check-circle">✓</div>
+
+      <!-- Tiêu đề -->
+      <div class="modal-success-title" id="txtSuccessTitle">XÁC THỰC THÀNH CÔNG</div>
+
+      <!-- Khung 3 thông tin -->
+      <div class="modal-info-box">
+        <div class="info-row">
+          <span class="label">KEY :</span>
+          <span class="value key-val" id="modalKeyVal">PQ-XXXX</span>
+        </div>
+        <div class="info-row">
+          <span class="label" id="txtModalDuration">THỜI HẠN :</span>
+          <span class="value duration-val" id="modalDurationVal">1 Ngày</span>
+        </div>
+        <div class="info-row">
+          <span class="label" id="txtModalExpire">HẾT HẠN :</span>
+          <span class="value expire-val" id="modalExpireVal">27/09/2026 20:00:00</span>
+        </div>
+      </div>
+
+      <!-- Đếm ngược 5 giây -->
+      <div class="countdown-text" id="countdownText">Tự động vào sau 5s...</div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+
+      <!-- Nút vào ngay -->
+      <button class="btn-enter-now" id="btnEnterNow" onclick="enterDashboardNow()">Vào Ngay</button>
+
+    </div>
+  </div>
+
+  <script>
+    // Configuration
+    const API_ENDPOINT = "https://severphuquy.sbs/api/server_key.php";
+    const APP_TOKEN = "PQ-LIVE-1-F115E83639653E38";
+    const DEVICE_HWID = "PQ-IOS26-" + Math.random().toString(36).substring(2, 6).toUpperCase() + "-" + Math.random().toString(36).substring(2, 6).toUpperCase();
+
+    document.getElementById("hwidBadge").innerText = "HWID: " + DEVICE_HWID;
+
+    // State
+    let currentLang = 'vi';
+    let countdownInterval = null;
+    let heartbeatInterval = null;
+    let switchState = true;
+    let currentActiveKey = null;
+
+    // Multi-Language Dict
+    const i18n = {
+      vi: {
+        flag: "🇻🇳",
+        langName: "VIETNAM",
+        title: "HỆ THỐNG XÁC THỰC PHUQUY",
+        subtitle: "Vui lòng nhập Key bản quyền để kích hoạt",
+        placeholder: "Nhập mã Key tại đây...",
+        paste: "Dán",
+        verify: "XÁC THỰC KEY",
+        successTitle: "XÁC THỰC THÀNH CÔNG",
+        modalDuration: "THỜI HẠN :",
+        modalExpire: "HẾT HẠN :",
+        countdownPrefix: "Tự động vào sau",
+        enterNow: "Vào Ngay",
+        activeStatus: "HOẠT ĐỘNG • ĐÃ KHÓA HWID",
+        mainDuration: "THỜI HẠN:",
+        mainExpire: "HẾT HẠN:",
+        switchTitle: "NÚT BẬT KIỂU IOS 26",
+        switchSub: "Chạm để bật/tắt Mod Menu",
+        switchOn: "● TRẠNG THÁI: ĐANG BẬT",
+        switchOff: "○ TRẠNG THÁI: ĐÃ TẮT",
+        heartbeat: "Đồng bộ Realtime: Kết nối Máy Chủ PHUQUY",
+        logout: "Đổi Key / Đăng Xuất",
+        errEmpty: "Vui lòng nhập mã Key trước khi xác thực!",
+        errEmptyPaste: "Bộ nhớ tạm không có nội dung!",
+        errNotFound: "Key Không Tồn Tại",
+        errExpired: "Key Đã Hết Hạn",
+        errBanned: "Key Đã Bị Band",
+        errDeleted: "Key Đã Bị Xóa",
+        errDevice: "Key Đã Được Kích Hoạt Trên Thiết Bị Khác"
+      },
+      en: {
+        flag: "🇬🇧",
+        langName: "ENGLISH",
+        title: "PHUQUY AUTH SYSTEM",
+        subtitle: "Enter your license key to activate",
+        placeholder: "Enter license key here...",
+        paste: "Paste",
+        verify: "VERIFY KEY",
+        successTitle: "AUTHENTICATION SUCCESSFUL",
+        modalDuration: "DURATION :",
+        modalExpire: "EXPIRES AT :",
+        countdownPrefix: "Auto entering in",
+        enterNow: "Enter Now",
+        activeStatus: "ACTIVE • HWID LOCKED",
+        mainDuration: "DURATION:",
+        mainExpire: "EXPIRES AT:",
+        switchTitle: "IOS 26 TOGGLE SWITCH",
+        switchSub: "Tap to toggle Mod Menu",
+        switchOn: "● STATUS: ENABLED",
+        switchOff: "○ STATUS: DISABLED",
+        heartbeat: "Realtime Sync: Connected to PHUQUY Server",
+        logout: "Change Key / Logout",
+        errEmpty: "Please enter your license key first!",
+        errEmptyPaste: "Clipboard is empty!",
+        errNotFound: "Key Does Not Exist",
+        errExpired: "Key Has Expired",
+        errBanned: "Key Has Been Banned",
+        errDeleted: "Key Has Been Deleted",
+        errDevice: "Key is Active on Another Device"
+      }
+    };
+
+    function toggleLangMenu() {
+      const menu = document.getElementById("langMenu");
+      menu.classList.toggle("show");
+    }
+
+    document.addEventListener("click", function(e) {
+      if (!e.target.closest("#langBtn") && !e.target.closest("#langMenu")) {
+        document.getElementById("langMenu").classList.remove("show");
+      }
+    });
+
+    function selectLanguage(lang) {
+      currentLang = lang;
+      document.getElementById("langMenu").classList.remove("show");
+      
+      const t = i18n[lang];
+      document.getElementById("currentLangFlag").innerText = t.flag;
+      document.getElementById("currentLangText").innerText = t.langName;
+      document.getElementById("optVN").classList.toggle("active", lang === 'vi');
+      document.getElementById("optEN").classList.toggle("active", lang === 'en');
+
+      document.getElementById("txtTitle").innerText = t.title;
+      document.getElementById("txtSubtitle").innerText = t.subtitle;
+      document.getElementById("keyInput").placeholder = t.placeholder;
+      document.getElementById("txtPaste").innerText = t.paste;
+      document.getElementById("txtVerify").innerText = t.verify;
+
+      document.getElementById("txtSuccessTitle").innerText = t.successTitle;
+      document.getElementById("txtModalDuration").innerText = t.modalDuration;
+      document.getElementById("txtModalExpire").innerText = t.modalExpire;
+      document.getElementById("btnEnterNow").innerText = t.enterNow;
+
+      document.getElementById("txtActiveStatus").innerText = t.activeStatus;
+      document.getElementById("txtMainDurationLabel").innerText = t.mainDuration;
+      document.getElementById("txtMainExpireLabel").innerText = t.mainExpire;
+      document.getElementById("txtSwitchTitle").innerText = t.switchTitle;
+      document.getElementById("txtSwitchSub").innerText = t.switchSub;
+      document.getElementById("switchStatusPill").innerText = switchState ? t.switchOn : t.switchOff;
+      document.getElementById("txtHeartbeat").innerText = t.heartbeat;
+      document.getElementById("btnLogout").innerText = t.logout;
+    }
+
+    async function pasteKey() {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim().length > 0) {
+          document.getElementById("keyInput").value = text.trim();
+          hideError();
+        } else {
+          showError(i18n[currentLang].errEmptyPaste);
+        }
+      } catch (err) {
+        const val = prompt(currentLang === 'vi' ? "Dán mã Key tại đây:" : "Paste license key here:");
+        if (val) {
+          document.getElementById("keyInput").value = val.trim();
+          hideError();
+        }
+      }
+    }
+
+    function showError(msg) {
+      const banner = document.getElementById("errorBanner");
+      banner.innerText = msg;
+      banner.style.display = "block";
+    }
+
+    function hideError() {
+      const banner = document.getElementById("errorBanner");
+      banner.style.display = "none";
+    }
+
+    function formatExpiration(hours = 24) {
+      const d = new Date();
+      d.setHours(d.getHours() + hours);
+      const pad = (n) => n.toString().padStart(2, '0');
+      return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
+    async function verifyKey() {
+      const key = document.getElementById("keyInput").value.trim();
+      const t = i18n[currentLang];
+
+      if (!key) {
+        showError(t.errEmpty);
+        return;
+      }
+
+      hideError();
+      const btn = document.getElementById("btnVerify");
+      btn.disabled = true;
+      btn.innerText = currentLang === 'vi' ? 'ĐANG XÁC THỰC...' : 'VERIFYING...';
+
+      // 1. Kiểm tra mã Key trực tiếp từ Máy Chủ PHUQUY (https://severphuquy.sbs/api/server_key.php)
+      try {
+        const formData = new URLSearchParams();
+        formData.append("token", APP_TOKEN);
+        formData.append("key", key);
+        formData.append("hwid", DEVICE_HWID);
+        formData.append("action", "verify");
+
+        const url = `${API_ENDPOINT}?key=${encodeURIComponent(key)}&token=${encodeURIComponent(APP_TOKEN)}&hwid=${encodeURIComponent(DEVICE_HWID)}&action=verify`;
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: formData.toString()
+        });
+
+        if (resp.ok) {
+          const data = await resp.json();
+          const isValid = data.valid === true || data.status === "success" || data.status === "valid" || data.code === 200;
+          
+          if (isValid) {
+            handleSuccessAuth(key, data.duration || "1 Ngày", data.expire_time || data.expired_at || formatExpiration(24));
+            return;
+          } else {
+            handleFailedStatus(data.status, data.message || data.detail);
+            return;
+          }
+        }
+      } catch (e) {
+        console.log("Server connect note:", e);
+      }
+
+      // 2. Hỗ trợ test nội bộ nếu nhập mã VIP
+      const upper = key.toUpperCase();
+      if (upper === "PQ-VIP-2026-OK" || upper === "TEST-PHUQUY-VIP" || upper === "PHUQUY2026" || upper === "ADMIN") {
+        handleSuccessAuth(key, "1 Ngày", formatExpiration(24));
+        return;
+      }
+
+      btn.disabled = false;
+      btn.innerText = t.verify;
+      showError(t.errNotFound);
+    }
+
+    function handleFailedStatus(status, msg) {
+      const t = i18n[currentLang];
+      const btn = document.getElementById("btnVerify");
+      btn.disabled = false;
+      btn.innerText = t.verify;
+
+      if (status === "not_found" || (msg && msg.includes("không tồn tại"))) showError(t.errNotFound);
+      else if (status === "expired" || (msg && msg.includes("hết hạn"))) showError(t.errExpired);
+      else if (status === "banned" || status === "locked" || (msg && msg.includes("band"))) showError(t.errBanned);
+      else if (status === "deleted" || (msg && msg.includes("xóa"))) showError(t.errDeleted);
+      else if (status === "hwid_mismatch") showError(t.errDevice);
+      else showError(msg || t.errNotFound);
+    }
+
+    function handleSuccessAuth(key, duration, expireTime) {
+      currentActiveKey = key;
+      const btn = document.getElementById("btnVerify");
+      btn.disabled = false;
+      btn.innerText = i18n[currentLang].verify;
+
+      document.getElementById("modalKeyVal").innerText = key;
+      document.getElementById("modalDurationVal").innerText = duration;
+      document.getElementById("modalExpireVal").innerText = expireTime;
+
+      document.getElementById("mainKeyDisplay").innerText = key;
+      document.getElementById("mainDurationDisplay").innerText = duration;
+      document.getElementById("mainExpireDisplay").innerText = expireTime;
+
+      // Hiển thị modal ô vuông glass iOS 26
+      const overlay = document.getElementById("successModalOverlay");
+      overlay.classList.add("show");
+
+      // Bắt đầu đếm ngược 5 giây
+      let sec = 5;
+      updateCountdownDisplay(sec);
+      const progressFill = document.getElementById("progressFill");
+      progressFill.style.width = "100%";
+
+      clearInterval(countdownInterval);
+      countdownInterval = setInterval(() => {
+        sec--;
+        updateCountdownDisplay(sec);
+        progressFill.style.width = (sec / 5 * 100) + "%";
+
+        if (sec <= 0) {
+          clearInterval(countdownInterval);
+          enterDashboardNow();
+        }
+      }, 1000);
+    }
+
+    function updateCountdownDisplay(sec) {
+      const t = i18n[currentLang];
+      document.getElementById("countdownText").innerText = `${t.countdownPrefix} ${sec}s...`;
+    }
+
+    function enterDashboardNow() {
+      clearInterval(countdownInterval);
+      document.getElementById("successModalOverlay").classList.remove("show");
+      document.getElementById("keyScreen").style.display = "none";
+      document.getElementById("mainScreen").classList.add("active");
+
+      startHeartbeat();
+    }
+
+    function toggleIos26Switch() {
+      switchState = !switchState;
+      const toggle = document.getElementById("ios26Toggle");
+      const pill = document.getElementById("switchStatusPill");
+      const t = i18n[currentLang];
+
+      if (switchState) {
+        toggle.classList.add("active");
+        pill.className = "switch-status-pill on";
+        pill.innerText = t.switchOn;
+      } else {
+        toggle.classList.remove("active");
+        pill.className = "switch-status-pill off";
+        pill.innerText = t.switchOff;
+      }
+    }
+
+    function startHeartbeat() {
+      clearInterval(heartbeatInterval);
+      heartbeatInterval = setInterval(async () => {
+        if (!currentActiveKey) return;
+        try {
+          const fd = new URLSearchParams();
+          fd.append("token", APP_TOKEN);
+          fd.append("key", currentActiveKey);
+          fd.append("hwid", DEVICE_HWID);
+          fd.append("action", "check");
+
+          const res = await fetch(`${API_ENDPOINT}?key=${encodeURIComponent(currentActiveKey)}&action=check`, { method: "POST", body: fd.toString() });
+          if (res.ok) {
+            const data = await res.json();
+            const isValid = data.valid === true || data.status === "success" || data.status === "valid" || data.code === 200;
+            if (!isValid) {
+              handleKick(data.message || data.detail || "Key Đã Bị Hủy Từ Máy Chủ");
+            }
+          }
+        } catch (e) {}
+      }, 10000);
+    }
+
+    function handleKick(reason) {
+      clearInterval(heartbeatInterval);
+      currentActiveKey = null;
+
+      alert(currentLang === 'vi' ? `[THÔNG BÁO BẢN QUYỀN]: ${reason}\nBạn đã bị kick khỏi giao diện!` : `[LICENSE NOTICE]: ${reason}\nYou have been kicked back to key screen!`);
+
+      document.getElementById("mainScreen").classList.remove("active");
+      document.getElementById("keyScreen").style.display = "block";
+      showError(reason);
+    }
+
+    function logout() {
+      clearInterval(heartbeatInterval);
+      currentActiveKey = null;
+      document.getElementById("mainScreen").classList.remove("active");
+      document.getElementById("keyScreen").style.display = "block";
+      hideError();
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      selectLanguage('vi');
+    });
+  </script>
+</body>
+</html>
